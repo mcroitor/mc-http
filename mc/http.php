@@ -4,16 +4,23 @@ namespace mc;
 
 class http
 {
+    private const ENCODERS = [
+        "http_build_query",
+        "json_encode"
+    ];
+
     private string $url;
     private array $options = [];
+    private string $encoder = "http_build_query";
 
     public function __construct(string $url, array $options = [])
     {
         $this->url = $url;
-        $this->options = $options;
+        $this->set_options($options);
     }
 
-    private static function request(array $options){
+    private static function request(array $options)
+    {
 
         $ch = curl_init();
         curl_setopt_array($ch, $options);
@@ -24,13 +31,21 @@ class http
         return $result;
     }
 
-    public function set_option($key, $value) {
+    public function set_option($key, $value)
+    {
         $this->options[$key] = $value;
     }
 
-    public function set_options(array $options){
-        foreach($options as $key => $value){
-            $this->options[$key] = $value;
+    public function set_encoder(callable $encoder) {
+        if(array_search($encoder, self::ENCODERS) !== false){
+            $this->encoder = $encoder;
+        }
+    }
+
+    public function set_options(array $options)
+    {
+        foreach ($options as $key => $value) {
+            $this->set_option($key, $value);
         }
     }
 
@@ -38,44 +53,44 @@ class http
     {
         $q = strpos($this->url, '?') === false ? '?' : '';
         $this->set_options($options);
-        $this->options[CURLOPT_HTTPGET] = true;
-        $this->options[CURLOPT_URL] = $this->url . $q . http_build_query($data);
+        $this->set_options([
+            CURLOPT_HTTPGET => true,
+            CURLOPT_URL => $this->url . $q . http_build_query($data)
+        ]);
         return self::request($this->options);
     }
 
     public function post(array $data = [], array $options = [])
     {
         $this->set_options($options);
-        $options[CURLOPT_POST] = true;
-        $options[CURLOPT_URL] = $this->url;
-        $options[CURLOPT_FRESH_CONNECT] = true;
-        $options[CURLOPT_POSTFIELDS] = http_build_query($data);
-        return self::request($options);
+        $this->set_options([
+            CURLOPT_POST => true,
+            CURLOPT_URL => $this->url,
+            CURLOPT_POSTFIELDS => ($this->encoder)($data)
+        ]);
+        return self::request($this->options);
     }
 
     public function put(array $data = [], array $options = [])
     {
         $this->set_options($options);
-        $options[CURLOPT_CUSTOMREQUEST] = "PUT";
-        $options[CURLOPT_URL] = $this->url;
-        $options[CURLOPT_FRESH_CONNECT] = true;
-        $options[CURLOPT_RETURNTRANSFER] = true;
-        $options[CURLOPT_FORBID_REUSE] = true;
-        $options[CURLOPT_POSTFIELDS] = http_build_query($data);
-        return self::request($options);
+        $this->set_options([
+            CURLOPT_CUSTOMREQUEST => "PUT",
+            CURLOPT_URL => $this->url,
+            CURLOPT_POSTFIELDS => ($this->encoder)($data)
+        ]);
+        return self::request($this->options);
     }
 
     public function delete(array $data = [], array $options = [])
     {
         $q = strpos($this->url, '?') === false ? '?' : '';
         $this->set_options($options);
-        $options[CURLOPT_CUSTOMREQUEST] = "DELETE";
-        $options[CURLOPT_URL] = $this->url . $q . http_build_query($data);
-        $options[CURLOPT_FRESH_CONNECT] = true;
-        $options[CURLOPT_RETURNTRANSFER] = true;
-        $options[CURLOPT_FORBID_REUSE] = true;
-        $options[CURLOPT_POSTFIELDS] = '';
-        return self::request($options);
+        $this->set_options([
+            CURLOPT_CUSTOMREQUEST => "DELETE",
+            CURLOPT_URL => $this->url . $q . http_build_query($data),
+            CURLOPT_POSTFIELDS => ''
+        ]);
+        return self::request($this->options);
     }
-
 }
