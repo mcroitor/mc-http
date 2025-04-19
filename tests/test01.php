@@ -13,8 +13,8 @@ $opts = [
 $url1 = "https://endgame.md/endgame/getpgn.php";
 $data = ["pid" => 100];
 
-$getpgn = new \mc\http($url1, $opts);
-echo $getpgn->get($data);
+$getpgn = new \Mc\Http($url1, $opts);
+echo $getpgn->Get($data);
 
 // post
 $url2 = "https://endgame.md/endgame/data.php";
@@ -26,8 +26,8 @@ $data = [
     "piece_pattern" => ""
 ];
 
-$finddata = new \mc\http($url2, $opts);
-$finddata->set_encoder("json_encode");
-echo $finddata->post($data, [
+$finddata = new \Mc\Http($url2, $opts);
+$finddata->SetEncoder("json_encode");
+echo $finddata->Post($data, [
     CURLOPT_HTTPHEADER => ['Content-type: application/json; charset=utf-8']
 ]);
